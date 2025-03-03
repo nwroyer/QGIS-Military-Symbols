@@ -1,4 +1,4 @@
-from MilitarySymbolPlugin import MilitarySymbolPlugin
+from .plugin import MilitarySymbolPlugin
 
 def classFactory(iface):
     return MilitarySymbolPlugin(iface)
