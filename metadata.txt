@@ -1,0 +1,9 @@
+[general]
+name=Military Symbols
+description=A plugin for rendering military symbols
+about=A plugin for rendering military symbols
+version=1.0
+qgisMinimumVersion=3.40
+author=Nick Royer
+email=nick.w.royer@gmail.com
+repository=URL to the code repository
