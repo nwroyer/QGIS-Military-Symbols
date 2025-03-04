@@ -1,29 +1,43 @@
-from qgis.gui import QgsSymbolLayerWidget
+from PyQt5.QtWidgets import QVBoxLayout
+from qgis.gui import QgsSymbolLayerWidget, QgsExpressionBuilderWidget
 from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout
+from .symbol_layer import MilitarySymbolLayer
 
 class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
     def __init__(self, parent=None):
         QgsSymbolLayerWidget.__init__(self, parent)
 
-        self.layer = None
+        self.layer:MilitarySymbolLayer = None
 
-        # setup a simple UI
-        self.label = QLabel("Radius:")
+        vbox = QVBoxLayout()
+        self.setLayout(vbox)
+
+        # Radius item
+        hbox = QHBoxLayout()
+        vbox.addLayout(hbox)
+        label = QLabel("Radius:")
+        hbox.addWidget(label)
         self.spinRadius = QDoubleSpinBox()
-        self.hbox = QHBoxLayout()
-        self.hbox.addWidget(self.label)
-        self.hbox.addWidget(self.spinRadius)
-        self.setLayout(self.hbox)
+        hbox.addWidget(self.spinRadius)
         self.spinRadius.valueChanged.connect(self.radiusChanged)
 
+        # SIDC item
+        hbox = QHBoxLayout()
+        vbox.addLayout(hbox)
+        self.sidc:QgsExpressionBuilderWidget = QgsExpressionBuilderWidget()
+        hbox.addWidget(QLabel('SIDC:'))
+        hbox.addWidget(self.sidc)
+
     def setSymbolLayer(self, layer):
-        if layer.layerType() != "MilitarySymbolMarker":
+        if layer is None or layer.layerType() != "MilitarySymbolMarker":
             print('Bad marker')
             return
 
         print('Marker')
         self.layer = layer
         self.spinRadius.setValue(layer.radius)
+
+
 
     def symbolLayer(self):
         return self.layer
