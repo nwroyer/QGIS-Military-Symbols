@@ -1,7 +1,10 @@
-from PyQt5.QtWidgets import QVBoxLayout
-from qgis.gui import QgsSymbolLayerWidget, QgsFieldValuesLineEdit
-from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout
+import qgis.utils
+from qgis.gui import QgsSymbolLayerWidget, QgsFieldValuesLineEdit, QgsPropertyOverrideButton, QgsDoubleSpinBox, QgsLayerPropertiesWidget
+from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QFormLayout, QLineEdit
+from qgis.core import QgsMarkerSymbolLayer, QgsProperty, QgsPropertyDefinition, QgsSymbolLayer, QgsApplication, QgsExpressionContext
+
 from .symbol_layer import MilitarySymbolLayer
+from qgis.utils import iface
 
 class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
     def __init__(self, parent=None):
@@ -9,40 +12,68 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
 
         self.layer:MilitarySymbolLayer = None
 
-        vbox = QVBoxLayout()
-        self.setLayout(vbox)
+        layout = QFormLayout()
+        self.setLayout(layout)
 
-        # Radius item
+        # Size item
+        self.spinSize = QgsDoubleSpinBox(None)
         hbox = QHBoxLayout()
-        vbox.addLayout(hbox)
-        label = QLabel("Size:")
-        hbox.addWidget(label)
-        self.spinSize = QDoubleSpinBox()
+        layout.addRow('Size', hbox)
         hbox.addWidget(self.spinSize)
         self.spinSize.valueChanged.connect(self.sizeChanged)
 
+        self.spinOverride = QgsPropertyOverrideButton(self.spinSize)
+        hbox.addWidget(self.spinOverride)
+        self.spinOverride.registerLinkedWidget(widget=self.spinSize)
+        self.spinOverride.registerEnabledWidget(widget=self.spinSize, natural=False)
+
         # SIDC item
-        hbox = QHBoxLayout()
-        vbox.addLayout(hbox)
+        self.spinOverride.changed.connect(self.sizeOverrideChanged)
+        self.spinOverride.activated.connect(self.sizeOverrideChanged)
 
-        hbox.addWidget(QLabel('SIDC:'))
-        hbox.addWidget(self.sidc)
-
-    def setSymbolLayer(self, layer):
+    def setSymbolLayer(self, layer:QgsSymbolLayer):
         if layer is None or layer.layerType() != "MilitarySymbolMarker":
             print('Bad marker')
             return
 
         print('Marker')
         self.layer = layer
-        self.spinSize.setValue(layer.size())
+        vector_layer = iface.activeLayer()
 
+        self.spinSize.setValue(layer.get_size_value(None))
 
+        self.spinOverride.init(MilitarySymbolLayer.Property.Size,
+                               self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size),
+                               self.layer.propertyDefinitions()[MilitarySymbolLayer.Property.Size],
+                               vector_layer)
+
+        self.spinOverride.setProperty('size_prop', self.layer.size_prop)
+        self.spinOverride.setActive(self.layer.size_expression)
+
+        if self.layer.size_expression:
+            print(f'Layering expression {self.layer.size_prop}')
+            self.spinOverride.setProperty(QgsProperty.fromExpression(self.layer.size_prop))
 
     def symbolLayer(self):
         return self.layer
 
     def sizeChanged(self, value):
-        print(f'Changing size to {value}')
-        self.layer.setSize(value)
+        raw_value = self.spinSize.value()
+        override_active:bool = self.spinOverride.isActive()
+
+        print(f'Updating size: {raw_value} / override active: {override_active}')
+
+        if override_active:
+            self.layer.size_expression = True
+            size_prop:QgsProperty = self.spinOverride.toProperty()
+            self.layer.size_prop = size_prop.expressionString()
+        else:
+            self.layer.size_expression = False
+            self.layer.size_prop = raw_value
+
         self.changed.emit()
+
+    def sizeOverrideChanged(self):
+        self.sizeChanged(0.0)
+
+
