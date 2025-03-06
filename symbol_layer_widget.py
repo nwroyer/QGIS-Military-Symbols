@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QVBoxLayout
-from qgis.gui import QgsSymbolLayerWidget, QgsExpressionBuilderWidget
+from qgis.gui import QgsSymbolLayerWidget, QgsFieldValuesLineEdit
 from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout
 from .symbol_layer import MilitarySymbolLayer
 
@@ -15,16 +15,16 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         # Radius item
         hbox = QHBoxLayout()
         vbox.addLayout(hbox)
-        label = QLabel("Radius:")
+        label = QLabel("Size:")
         hbox.addWidget(label)
-        self.spinRadius = QDoubleSpinBox()
-        hbox.addWidget(self.spinRadius)
-        self.spinRadius.valueChanged.connect(self.radiusChanged)
+        self.spinSize = QDoubleSpinBox()
+        hbox.addWidget(self.spinSize)
+        self.spinSize.valueChanged.connect(self.sizeChanged)
 
         # SIDC item
         hbox = QHBoxLayout()
         vbox.addLayout(hbox)
-        self.sidc:QgsExpressionBuilderWidget = QgsExpressionBuilderWidget()
+
         hbox.addWidget(QLabel('SIDC:'))
         hbox.addWidget(self.sidc)
 
@@ -35,13 +35,14 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
 
         print('Marker')
         self.layer = layer
-        self.spinRadius.setValue(layer.radius)
+        self.spinSize.setValue(layer.size())
 
 
 
     def symbolLayer(self):
         return self.layer
 
-    def radiusChanged(self, value):
-        self.layer.radius = value
+    def sizeChanged(self, value):
+        print(f'Changing size to {value}')
+        self.layer.setSize(value)
         self.changed.emit()
