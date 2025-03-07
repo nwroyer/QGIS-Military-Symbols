@@ -1,8 +1,9 @@
 import sys
 
 import qgis.utils
+from PyQt5.QtWidgets import QComboBox
 from qgis.gui import QgsSymbolLayerWidget, QgsFieldValuesLineEdit, QgsPropertyOverrideButton, QgsDoubleSpinBox, QgsLayerPropertiesWidget
-from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QFormLayout, QLineEdit
+from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox
 from qgis.core import QgsMarkerSymbolLayer, QgsProperty, QgsPropertyDefinition, QgsSymbolLayer, QgsApplication, QgsExpressionContext
 
 from .symbol_layer import MilitarySymbolLayer
@@ -47,6 +48,17 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         self.sidcOverride.changed.connect(self.sidcOverrideChanged)
         self.sidcOverride.activated.connect(self.sidcOverrideChanged)
 
+        # SIDC is name
+        self.sidcIsNameField = QCheckBox()
+        layout.addRow('Field is name', self.sidcIsNameField)
+        self.sidcIsNameField.stateChanged.connect(self.sidcIsNameChanged)
+
+        # Style
+        self.styleField = QComboBox()
+        self.styleField.addItems([d.capitalize() for d in MilitarySymbolLayer.STYLE_OPTIONS])
+        layout.addRow('Style', self.styleField)
+        self.styleField.currentIndexChanged.connect(self.styleChanged)
+
         self.updating = False
 
     def setSymbolLayer(self, layer:QgsSymbolLayer):
@@ -77,6 +89,15 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
                                auxiliaryStorageEnabled=True)
         self.sidcOverride.setActive(self.layer.is_sidc_data_defined())
         self.sidcField.setEnabled(not self.layer.is_sidc_data_defined())
+
+        # SIDC is name
+        self.sidcIsNameField.setChecked(self.layer.sidc_is_name)
+
+        # Style
+        if self.layer.style in MilitarySymbolLayer.STYLE_OPTIONS:
+            self.styleField.setCurrentIndex(MilitarySymbolLayer.STYLE_OPTIONS.index(self.layer.style))
+        else:
+            self.styleField.setCurrentIndex(0)
 
         # Closeout
         self.updating = False
@@ -123,4 +144,17 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
     def sidcOverrideChanged(self):
         self.sidcChanged('')
 
+    def sidcIsNameChanged(self, on:bool):
+        if self.layer is None or self.updating:
+            return
+
+        self.layer.sidc_is_name = on
+        self.changed.emit()
+
+    def styleChanged(self, index):
+        if self.layer is None or self.updating:
+            return
+
+        self.layer.style = MilitarySymbolLayer.STYLE_OPTIONS[index]
+        self.changed.emit()
 

@@ -13,18 +13,76 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
     DEFAULT_SIZE:float = 4.0
     DEFAULT_SIDC:str = '10011000000000000000'
 
-    def __init__(self, sidc:str = '',
+    STYLE_OPTIONS:list = [
+        'light', 'medium', 'dark', 'unfilled'
+    ]
+    DEFAULT_STYLE:str = 'light'
+
+    def __init__(self,
+                 sidc:str = '',
                  size:float = DEFAULT_SIZE,
                  size_expression:str = "",
                  is_size_expression:bool = False,
                  sidc_expression:str = "",
-                 is_sidc_expression:bool = False):
+                 is_sidc_expression:bool = False,
+                 sidc_is_name:bool = False,
+                 style:str = DEFAULT_STYLE):
 
         QgsMarkerSymbolLayer.__init__(self)
 
-        self.sidc = sidc
+        self.sidc:str = sidc
+        self.sidc_is_name:bool = sidc_is_name
+        self.style:str = style
         self.set_size_data_defined(data_defined=is_size_expression, expression=size_expression, value=size)
         self.set_sidc_data_defined(data_defined=is_sidc_expression, expression=sidc_expression, value=sidc)
+
+    def properties(self):
+        ret = {
+            "size": str(self.size()),
+            "sidc": str(self.sidc),
+
+            "size_expression": self.get_size_data_defined_expression(),
+            "is_size_expression": self.is_size_data_defined(),
+
+            "sidc_expression": self.get_sidc_data_defined_expression(),
+            "is_sidc_expression": self.is_sidc_data_defined(),
+
+            "sidc_is_name": self.sidc_is_name,
+            "style": self.style
+        }
+        return ret
+
+    @staticmethod
+    def createSymbolLayer(props):
+        size = float(props.get("size", MilitarySymbolLayer.DEFAULT_SIZE))
+        sidc = props.get("sidc", "")
+
+        size_expression = props.get("size_expression", "")
+        is_size_expression = bool(props.get("is_size_expression", False))
+
+        sidc_expression = props.get("sidc_expression", "")
+        is_sidc_expression = bool(props.get("is_sidc_expression", False))
+
+        sidc_is_name = bool(props.get("sidc_is_name", False))
+        style = str(props.get("style", MilitarySymbolLayer.DEFAULT_STYLE))
+
+        return MilitarySymbolLayer(size=size,
+                                   sidc=sidc,
+                                   is_size_expression=is_size_expression,
+                                   size_expression=size_expression,
+                                   is_sidc_expression=is_sidc_expression,
+                                   sidc_expression=sidc_expression,
+                                   sidc_is_name=sidc_is_name,
+                                   style=style)
+
+    def clone(self):
+        ret = MilitarySymbolLayer(size=self.size(),
+                                  sidc=self.sidc,
+                                  sidc_is_name=self.sidc_is_name,
+                                  style=self.style)
+
+        self.copyDataDefinedProperties(ret)
+        return ret
 
     def is_size_data_defined(self) -> bool:
         prop:QgsProperty = self.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size)
@@ -62,19 +120,6 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
 
     def layerType(self):
         return "MilitarySymbolMarker"
-
-    def properties(self):
-        ret = {
-            "size": str(self.size()),
-            "sidc": str(self.sidc),
-
-            "size_expression": self.get_size_data_defined_expression(),
-            "is_size_expression": self.is_size_data_defined(),
-
-            "sidc_expression": self.get_sidc_data_defined_expression(),
-            "is_sidc_expression": self.is_sidc_data_defined()
-        }
-        return ret
 
     def startRender(self, context):
         pass
@@ -116,17 +161,23 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         :param context: A QgsSymbolRenderContext for rendering
         :return:
         """
+
         # Rendering depends on whether the symbol is selected (QGIS >= 1.5)
         painter:QPainter = context.renderContext().painter()
 
         used_sidc:str = self.get_sidc_value(context)
+        used_style:str = self.style if self.style in MilitarySymbolLayer.STYLE_OPTIONS else MilitarySymbolLayer.DEFAULT_STYLE
         try:
-            svg_string = military_symbol.get_svg_string(used_sidc, is_sidc=True)
+            #print(f'SIDC: {used_sidc} / {self.sidc_is_name}')
+            svg_string = military_symbol.get_svg_string(used_sidc, is_sidc=not self.sidc_is_name,
+                                                        style=used_style)
         except Exception as ex:
-            svg_string = military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True)
+            svg_string = military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True,
+                                                        style=used_style)
 
         if svg_string is None or len(svg_string) < 1:
-            svg_string=military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True)
+            svg_string=military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True,
+                                                      style=used_style)
 
         svg_renderer = QSvgRenderer()
 
@@ -142,10 +193,3 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
 
         svg_renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         svg_renderer.render(painter, QRectF(point.x() - (size * 0.5), point.y() - (size * 0.5), size, size))
-
-    def clone(self):
-        ret = MilitarySymbolLayer(size=self.size(),
-                                  sidc=self.sidc)
-
-        self.copyDataDefinedProperties(ret)
-        return ret
