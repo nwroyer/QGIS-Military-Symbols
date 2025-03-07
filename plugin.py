@@ -12,7 +12,6 @@ class MilitarySymbolPlugin:
         self.iface = iface
 
         # Add the symbol layer
-        print('Adding symbol layer')
         symbol_layer_metadata = MilitarySymbolLayerMetadata()
         QgsApplication.symbolLayerRegistry().addSymbolLayerType(symbol_layer_metadata)
 

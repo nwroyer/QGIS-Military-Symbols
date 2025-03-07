@@ -11,7 +11,7 @@ from qgis.PyQt.QtSvg import QSvgRenderer
 class MilitarySymbolLayer(QgsMarkerSymbolLayer):
 
     DEFAULT_SIZE:float = 4.0
-    DEFAULT_SIDC:str = '10031000141504000008'
+    DEFAULT_SIDC:str = '10011000000000000000'
 
     def __init__(self, sidc:str = '',
                  size:float = DEFAULT_SIZE,
@@ -119,8 +119,15 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         # Rendering depends on whether the symbol is selected (QGIS >= 1.5)
         painter:QPainter = context.renderContext().painter()
 
-        used_sidc = MilitarySymbolLayer.DEFAULT_SIDC
-        svg_string = military_symbol.get_svg_string(used_sidc, is_sidc=True)
+        used_sidc:str = self.get_sidc_value(context)
+        try:
+            svg_string = military_symbol.get_svg_string(used_sidc, is_sidc=True)
+        except Exception as ex:
+            svg_string = military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True)
+
+        if svg_string is None or len(svg_string) < 1:
+            svg_string=military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC, is_sidc=True)
+
         svg_renderer = QSvgRenderer()
 
         xml_reader = QXmlStreamReader(svg_string)
