@@ -213,30 +213,27 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
 
         try:
             #print(f'SIDC: {used_sidc} / {self.sidc_is_name}')
-            svg_string = military_symbol.get_svg_string(used_sidc,
+            symbol, svg_string = military_symbol.get_symbol_and_svg_string(used_sidc,
                                                         is_sidc=not used_sidc_is_name,
                                                         style=used_style)
         except Exception as ex:
-            svg_string = military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
+            symbol, svg_string = military_symbol.get_symbol_and_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
                                                         is_sidc=not used_sidc_is_name,
                                                         style=used_style)
 
         if svg_string is None or len(svg_string) < 1:
-            svg_string=military_symbol.get_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
+            symbol, svg_string=military_symbol.get_symbol_and_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
                                                       is_sidc=not used_sidc_is_name,
                                                       style=used_style)
 
         svg_renderer = QSvgRenderer()
-
         xml_reader = QXmlStreamReader(svg_string)
         if not svg_renderer.load(xml_reader):
             return
 
+        aspect_ratio = svg_renderer.viewBoxF().height() / svg_renderer.viewBoxF().width()
         size:float = self.get_size_value(context) * 2.0
-        # if self.is_size_data_defined():
-        #     print(f'Size: Exp `{self.get_size_data_defined_expression()}` -> {size} with unit {self.sizeUnit()} = {size}')
-        # else:
-        #     print(f'Size: Val {size} with unit {self.sizeUnit()} = {size}')
 
-        svg_renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
-        svg_renderer.render(painter, QRectF(point.x() - (size * 0.5), point.y() - (size * 0.5), size, size))
+        #svg_renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatioByExpanding)
+        svg_renderer.render(painter, QRectF(point.x() - (size * 0.5), point.y() - (size * 0.5),
+            size, size * aspect_ratio))
