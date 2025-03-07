@@ -60,10 +60,18 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
     def stopRender(self, context):
         pass
 
-    def get_size_value(self, context:QgsRenderContext):
+    def get_size_value(self, context:QgsSymbolRenderContext):
         if self.is_size_data_defined():
             if context is not None:
-                exp_context: QgsExpressionContext = QgsExpressionContext()#[context.expressionContextScope()])
+                # exp_context:QgsExpressionContext = context.renderContext().expressionContext() if context.renderContext() is not None else QgsExpressionContext()
+                # if exp_context is None:
+                #     exp_context = QgsExpressionContext()
+                #
+                # exp_context.appendScope(context.expressionContextScope())
+                exp_context = QgsExpressionContext()
+                if context is not None and context.renderContext() is not None:
+                    exp_context = context.renderContext().expressionContext()
+
                 size_prop:QgsProperty = self.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size)
                 return size_prop.value(context=exp_context, defaultValue=DEFAULT_SIZE)[0]
             else:

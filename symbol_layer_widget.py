@@ -52,22 +52,9 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
                                layer=vector_layer,
                                auxiliaryStorageEnabled=True)
 
-        # size_prop = self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size)
-        # self.spinOverride.setToProperty(size_prop)
-        #
         is_active = self.layer.is_size_data_defined()
         self.spinOverride.setActive(is_active)
-        # self.spinSize.setEnabled(not is_active)
-
         self.updating = False
-
-        # is_size_overridden = self.layer.is_size_data_defined()
-        # self.spinSize.setProperty()
-        # self.spinOverride.setActive(self.layer.is_size_data_defined())
-        #
-        # if is_size_overridden:
-        #     print(f'Layering expression {self.layer.get_size_data_defined_expression()}')
-
 
     def symbolLayer(self):
         return self.layer
