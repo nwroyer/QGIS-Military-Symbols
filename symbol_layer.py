@@ -210,12 +210,16 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         used_sidc:str = self.get_sidc_value(context)
         used_style:str = self.style if self.style in MilitarySymbolLayer.STYLE_OPTIONS else MilitarySymbolLayer.DEFAULT_STYLE
         used_sidc_is_name:bool = self.get_sidc_is_name_value(context)
+        origin_offset:tuple = (0, 0)
 
         try:
             #print(f'SIDC: {used_sidc} / {self.sidc_is_name}')
-            symbol, svg_string = military_symbol.get_symbol_and_svg_string(used_sidc,
-                                                        is_sidc=not used_sidc_is_name,
-                                                        style=used_style)
+            symbol = military_symbol.get_symbol_class(used_sidc, is_sidc = not used_sidc_is_name)
+            svg_string, offset = symbol.get_svg_and_origin(style=used_style)
+            # symbol, svg_string = military_symbol.get_symbol_and_svg_string(used_sidc,
+            #                                             is_sidc=not used_sidc_is_name,
+            #                                             style=used_style)
+            origin_offset = offset
         except Exception as ex:
             symbol, svg_string = military_symbol.get_symbol_and_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
                                                         is_sidc=not used_sidc_is_name,
@@ -234,6 +238,7 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         aspect_ratio = svg_renderer.viewBoxF().height() / svg_renderer.viewBoxF().width()
         size:float = self.get_size_value(context) * 2.0
 
-        #svg_renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatioByExpanding)
+        size = context.renderContext().convertToPainterUnits(size, self.outputUnit())
+
         svg_renderer.render(painter, QRectF(point.x() - (size * 0.5), point.y() - (size * 0.5),
             size, size * aspect_ratio))
