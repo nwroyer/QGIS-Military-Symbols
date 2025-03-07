@@ -1,10 +1,10 @@
 import sys
 
 import qgis.utils
-from PyQt5.QtWidgets import QComboBox
-from qgis.gui import QgsSymbolLayerWidget, QgsFieldValuesLineEdit, QgsPropertyOverrideButton, QgsDoubleSpinBox, QgsLayerPropertiesWidget
-from qgis.PyQt.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox
-from qgis.core import QgsMarkerSymbolLayer, QgsProperty, QgsPropertyDefinition, QgsSymbolLayer, QgsApplication, QgsExpressionContext
+from qgis.PyQt.Qt import QColor
+from qgis.gui import QgsSymbolLayerWidget, QgsPropertyOverrideButton, QgsDoubleSpinBox, QgsColorButton
+from qgis.PyQt.QtWidgets import QHBoxLayout, QFormLayout, QLineEdit, QCheckBox, QComboBox
+from qgis.core import QgsProperty, QgsSymbolLayer
 
 from .symbol_layer import MilitarySymbolLayer
 from qgis.utils import iface
@@ -68,6 +68,16 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         layout.addRow('Style', self.styleField)
         self.styleField.currentIndexChanged.connect(self.styleChanged)
 
+        # Draw background
+        self.drawBackgroundField = QCheckBox()
+        layout.addRow('Draw halo', self.drawBackgroundField)
+        self.drawBackgroundField.stateChanged.connect(self.drawBackgroundChanged)
+
+        # Background color
+        self.backgroundColorField = QgsColorButton()
+        layout.addRow("Background color", self.backgroundColorField)
+        self.backgroundColorField.colorChanged.connect(self.backgroundColorChanged)
+
         self.updating = False
 
     def setSymbolLayer(self, layer:QgsSymbolLayer):
@@ -114,6 +124,11 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
             self.styleField.setCurrentIndex(MilitarySymbolLayer.STYLE_OPTIONS.index(self.layer.style))
         else:
             self.styleField.setCurrentIndex(0)
+
+        # Draw background
+        self.drawBackgroundField.setChecked(self.layer.draw_background)
+        self.backgroundColorField.setColor(QColor(self.layer.background_color))
+        self.backgroundColorField.setEnabled(self.layer.draw_background)
 
         # Closeout
         self.updating = False
@@ -188,3 +203,18 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         self.layer.style = MilitarySymbolLayer.STYLE_OPTIONS[index]
         self.changed.emit()
 
+    def drawBackgroundChanged(self, val):
+        if self.layer is None or self.updating:
+            return
+
+        self.layer.draw_background = self.drawBackgroundField.isChecked()
+        self.backgroundColorField.setEnabled(self.layer.draw_background)
+        self.changed.emit()
+
+    def backgroundColorChanged(self, val):
+        if self.layer is None or self.updating:
+            return
+
+        color:QColor = self.backgroundColorField.color()
+        self.layer.background_color = color.name()
+        self.changed.emit()

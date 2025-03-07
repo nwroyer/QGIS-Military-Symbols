@@ -17,6 +17,7 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         'light', 'medium', 'dark', 'unfilled'
     ]
     DEFAULT_STYLE:str = 'light'
+    DEFAULT_BACKGROUND_COLOR:str = "#ffffff"
 
     def __init__(self,
                  sidc:str = '',
@@ -28,13 +29,17 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
                  sidc_is_name:bool = False,
                  sidc_is_name_expression:str = "",
                  is_sidc_is_name_expression:bool = False,
-                 style:str = DEFAULT_STYLE):
+                 style:str = DEFAULT_STYLE,
+                 draw_background:bool = False,
+                 background_color:str = DEFAULT_BACKGROUND_COLOR):
 
         QgsMarkerSymbolLayer.__init__(self)
 
         self.sidc:str = sidc
         self.style:str = style
-        self.sidc_is_name = sidc_is_name
+        self.sidc_is_name:bool = sidc_is_name
+        self.draw_background:bool = draw_background
+        self.background_color:str = background_color # In hex format
 
         self.set_size_data_defined(data_defined=is_size_expression, expression=size_expression, value=size)
         self.set_sidc_data_defined(data_defined=is_sidc_expression, expression=sidc_expression, value=sidc)
@@ -55,6 +60,9 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
             "sidc_is_name_expression": self.get_sidc_is_name_data_defined_expression(),
             "is_sidc_is_name_expression": self.is_sidc_is_name_data_defined(),
 
+            "draw_background": self.draw_background,
+            "background_color": self.background_color,
+
             "style": self.style
         }
         return ret
@@ -74,6 +82,8 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         is_sidc_is_name_expression = bool(props.get("sidc_is_name_data_defined", False))
 
         style = str(props.get("style", MilitarySymbolLayer.DEFAULT_STYLE))
+        draw_background = bool(props.get("draw_background", False))
+        background_color = str(props.get("background_color", MilitarySymbolLayer.DEFAULT_BACKGROUND_COLOR))
 
         return MilitarySymbolLayer(size=size,
                                    sidc=sidc,
@@ -84,13 +94,17 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
                                    sidc_is_name=sidc_is_name,
                                    sidc_is_name_expression=sidc_is_name_expression,
                                    is_sidc_is_name_expression=is_sidc_is_name_expression,
-                                   style=style)
+                                   style=style,
+                                   draw_background=draw_background,
+                                   background_color=background_color)
 
     def clone(self):
         ret = MilitarySymbolLayer(size=self.size(),
                                   sidc=self.sidc,
                                   sidc_is_name=self.sidc_is_name,
-                                  style=self.style)
+                                  style=self.style,
+                                  draw_background=self.draw_background,
+                                  background_color=self.background_color)
 
         self.copyDataDefinedProperties(ret)
         return ret
@@ -210,25 +224,27 @@ class MilitarySymbolLayer(QgsMarkerSymbolLayer):
         used_sidc:str = self.get_sidc_value(context)
         used_style:str = self.style if self.style in MilitarySymbolLayer.STYLE_OPTIONS else MilitarySymbolLayer.DEFAULT_STYLE
         used_sidc_is_name:bool = self.get_sidc_is_name_value(context)
-        origin_offset:tuple = (0, 0)
+        used_draw_background:bool = self.draw_background
 
         try:
             #print(f'SIDC: {used_sidc} / {self.sidc_is_name}')
             symbol = military_symbol.get_symbol_class(used_sidc, is_sidc = not used_sidc_is_name)
-            svg_string, offset = symbol.get_svg_and_origin(style=used_style)
-            # symbol, svg_string = military_symbol.get_symbol_and_svg_string(used_sidc,
-            #                                             is_sidc=not used_sidc_is_name,
-            #                                             style=used_style)
-            origin_offset = offset
+            svg_string, offset = symbol.get_svg_and_origin(style=used_style,
+                                                           use_background=used_draw_background,
+                                                           background_color=self.background_color)
         except Exception as ex:
             symbol, svg_string = military_symbol.get_symbol_and_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
                                                         is_sidc=not used_sidc_is_name,
-                                                        style=used_style)
+                                                        style=used_style,
+                                                        use_background=used_draw_background,
+                                                        background_color=self.background_color)
 
         if svg_string is None or len(svg_string) < 1:
             symbol, svg_string=military_symbol.get_symbol_and_svg_string(MilitarySymbolLayer.DEFAULT_SIDC,
                                                       is_sidc=not used_sidc_is_name,
-                                                      style=used_style)
+                                                      style=used_style,
+                                                      use_background=used_draw_background,
+                                                      background_color=self.background_color)
 
         svg_renderer = QSvgRenderer()
         xml_reader = QXmlStreamReader(svg_string)
