@@ -50,8 +50,17 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
 
         # SIDC is name
         self.sidcIsNameField = QCheckBox()
-        layout.addRow('Field is name', self.sidcIsNameField)
+        hbox = QHBoxLayout()
+        layout.addRow('Field is name', hbox)
+        hbox.addWidget(self.sidcIsNameField)
         self.sidcIsNameField.stateChanged.connect(self.sidcIsNameChanged)
+
+        self.sidcIsNameOverride = QgsPropertyOverrideButton(self.sidcIsNameField)
+        hbox.addWidget(self.sidcIsNameOverride)
+        self.sidcIsNameOverride.registerLinkedWidget(widget=self.sidcIsNameField)
+        self.sidcIsNameOverride.registerEnabledWidget(widget=self.sidcIsNameField, natural=False)
+        self.sidcIsNameOverride.changed.connect(self.sidcIsNameOverrideChanged)
+        self.sidcIsNameOverride.activated.connect(self.sidcIsNameOverrideChanged)
 
         # Style
         self.styleField = QComboBox()
@@ -92,6 +101,13 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
 
         # SIDC is name
         self.sidcIsNameField.setChecked(self.layer.sidc_is_name)
+        self.sidcIsNameOverride.init(propertyKey=MilitarySymbolLayer.Property.JoinStyle,
+                               property=self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.JoinStyle),
+                               definition=self.layer.propertyDefinitions()[MilitarySymbolLayer.Property.JoinStyle],
+                               layer=vector_layer,
+                               auxiliaryStorageEnabled=True)
+        self.sidcIsNameOverride.setActive(self.layer.is_sidc_is_name_data_defined())
+        self.sidcIsNameField.setEnabled(not self.layer.is_sidc_is_name_data_defined())
 
         # Style
         if self.layer.style in MilitarySymbolLayer.STYLE_OPTIONS:
@@ -148,8 +164,22 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         if self.layer is None or self.updating:
             return
 
-        self.layer.sidc_is_name = on
+        raw_value = self.sidcIsNameField.isChecked()
+        override_active:bool = self.sidcIsNameOverride.isActive()
+
+        if override_active:
+            sidc_prop: QgsProperty = self.sidcIsNameOverride.toProperty()
+            self.layer.set_sidc_is_name_data_defined(data_defined=True,
+                                                     expression=sidc_prop.expressionString())
+        else:
+            self.layer.set_sidc_is_name_data_defined(data_defined=False,
+                                                     value=raw_value)
+
+        self.sidcIsNameField.setEnabled(not self.layer.is_sidc_is_name_data_defined())
         self.changed.emit()
+
+    def sidcIsNameOverrideChanged(self):
+        self.sidcIsNameChanged(False)
 
     def styleChanged(self, index):
         if self.layer is None or self.updating:
