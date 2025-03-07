@@ -9,10 +9,16 @@ class MilitarySymbolLayerMetadata(QgsSymbolLayerAbstractMetadata):
     self.sidc = QgsProperty()
 
   def createSymbolLayer(self, props):
-    size = str(props.get("size", MilitarySymbolLayer.DEFAULT_SIZE))
-    size_expression = bool(props.get("size_expression", False).lower() == "true")
+    size = float(props.get("size", MilitarySymbolLayer.DEFAULT_SIZE))
+    is_size_expression = bool(props.get("is_size_expression", False))
+    size_expression = props.get("size_expression", "")
+    sidc = props.get("sidc", "")
+
     print(f'Creating layer from size {size}')
-    return MilitarySymbolLayer(size=size, size_expression=size_expression)
+    return MilitarySymbolLayer(size=size,
+                               sidc=sidc,
+                               is_size_expression=is_size_expression,
+                               size_expression=size_expression)
 
   def createSymbolLayerWidget(self, a0, QgsVectorLayer=None):
     return MilitarySymbolLayerWidget()

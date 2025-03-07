@@ -28,8 +28,8 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         self.spinOverride.registerEnabledWidget(widget=self.spinSize, natural=False)
 
         # SIDC item
-        self.spinOverride.changed.connect(self.sizeOverrideChanged)
-        self.spinOverride.activated.connect(self.sizeOverrideChanged)
+        #self.spinOverride.changed.connect(self.sizeOverrideChanged)
+        #self.spinOverride.activated.connect(self.sizeOverrideChanged)
 
     def setSymbolLayer(self, layer:QgsSymbolLayer):
         if layer is None or layer.layerType() != "MilitarySymbolMarker":
@@ -40,19 +40,19 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         self.layer = layer
         vector_layer = iface.activeLayer()
 
-        self.spinSize.setValue(layer.get_size_value(None))
+        self.spinSize.setValue(layer.size())
 
         self.spinOverride.init(MilitarySymbolLayer.Property.Size,
                                self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size),
                                self.layer.propertyDefinitions()[MilitarySymbolLayer.Property.Size],
                                vector_layer)
 
-        self.spinOverride.setProperty('size_prop', self.layer.size_prop)
-        self.spinOverride.setActive(self.layer.size_expression)
+        is_size_overridden = self.layer.is_size_data_defined()
+        self.spinOverride.setToProperty(self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size))
 
-        if self.layer.size_expression:
-            print(f'Layering expression {self.layer.size_prop}')
-            self.spinOverride.setProperty(QgsProperty.fromExpression(self.layer.size_prop))
+        if is_size_overridden:
+            print(f'Layering expression {self.layer.get_size_data_defined_expression()}')
+            self.spinOverride.setToProperty(self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size))
 
     def symbolLayer(self):
         return self.layer
@@ -64,12 +64,11 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         print(f'Updating size: {raw_value} / override active: {override_active}')
 
         if override_active:
-            self.layer.size_expression = True
-            size_prop:QgsProperty = self.spinOverride.toProperty()
-            self.layer.size_prop = size_prop.expressionString()
+            size_prop: QgsProperty = self.spinOverride.toProperty()
+            self.layer.set_size_data_defined(data_defined=True,
+                                             expression=size_prop.expressionString())
         else:
-            self.layer.size_expression = False
-            self.layer.size_prop = raw_value
+            self.layer.set_size_data_defined(data_defined=False, value=raw_value)
 
         self.changed.emit()
 
