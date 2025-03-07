@@ -21,6 +21,8 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         layout.addRow('Size', hbox)
         hbox.addWidget(self.spinSize)
         self.spinSize.valueChanged.connect(self.sizeChanged)
+        self.spinSize.setMinimum(0)
+        self.spinSize.setMaximum(10000)
 
         self.spinOverride = QgsPropertyOverrideButton(self.spinSize)
         hbox.addWidget(self.spinOverride)
@@ -28,36 +30,52 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
         self.spinOverride.registerEnabledWidget(widget=self.spinSize, natural=False)
 
         # SIDC item
-        #self.spinOverride.changed.connect(self.sizeOverrideChanged)
-        #self.spinOverride.activated.connect(self.sizeOverrideChanged)
+        self.spinOverride.changed.connect(self.sizeOverrideChanged)
+        self.spinOverride.activated.connect(self.sizeOverrideChanged)
+
+        self.updating = False
 
     def setSymbolLayer(self, layer:QgsSymbolLayer):
         if layer is None or layer.layerType() != "MilitarySymbolMarker":
             print('Bad marker')
             return
 
+        self.updating = True
         print('Marker')
         self.layer = layer
         vector_layer = iface.activeLayer()
 
         self.spinSize.setValue(layer.size())
+        self.spinOverride.init(propertyKey=MilitarySymbolLayer.Property.Size,
+                               property=self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size),
+                               definition=self.layer.propertyDefinitions()[MilitarySymbolLayer.Property.Size],
+                               layer=vector_layer,
+                               auxiliaryStorageEnabled=True)
 
-        self.spinOverride.init(MilitarySymbolLayer.Property.Size,
-                               self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size),
-                               self.layer.propertyDefinitions()[MilitarySymbolLayer.Property.Size],
-                               vector_layer)
+        # size_prop = self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size)
+        # self.spinOverride.setToProperty(size_prop)
+        #
+        is_active = self.layer.is_size_data_defined()
+        self.spinOverride.setActive(is_active)
+        # self.spinSize.setEnabled(not is_active)
 
-        is_size_overridden = self.layer.is_size_data_defined()
-        self.spinOverride.setToProperty(self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size))
+        self.updating = False
 
-        if is_size_overridden:
-            print(f'Layering expression {self.layer.get_size_data_defined_expression()}')
-            self.spinOverride.setToProperty(self.layer.dataDefinedProperties().property(MilitarySymbolLayer.Property.Size))
+        # is_size_overridden = self.layer.is_size_data_defined()
+        # self.spinSize.setProperty()
+        # self.spinOverride.setActive(self.layer.is_size_data_defined())
+        #
+        # if is_size_overridden:
+        #     print(f'Layering expression {self.layer.get_size_data_defined_expression()}')
+
 
     def symbolLayer(self):
         return self.layer
 
     def sizeChanged(self, value):
+        if self.updating:
+            return
+
         raw_value = self.spinSize.value()
         override_active:bool = self.spinOverride.isActive()
 
