@@ -75,7 +75,7 @@ class MilitarySymbolLayerWidget(QgsSymbolLayerWidget):
 
         # Background color
         self.backgroundColorField = QgsColorButton()
-        layout.addRow("Background color", self.backgroundColorField)
+        layout.addRow("Halo color", self.backgroundColorField)
         self.backgroundColorField.colorChanged.connect(self.backgroundColorChanged)
 
         self.updating = False

@@ -1,9 +1,15 @@
 [general]
 name=Military Symbols
-description=A plugin for rendering military symbols
-about=A plugin for rendering military symbols
+description=A plugin for rendering military symbols on vector layers.
 version=1.0
 qgisMinimumVersion=3.40
 author=Nick Royer
 email=nick.w.royer@gmail.com
 repository=URL to the code repository
+category=Vector
+icon=icon.png
+tags=vector,symbol,symbology,military,NATO
+experimental=True
+about=Adds a symbol layer for rendering MIL-STD-2525E / NATO APP-6E symbols using the Python "military_symbol" library. The size and style of icons can be specified per layer or data-defined based on fields in the underlying feature layer.
+homepage=https://github.com/nwroyer/QGIS-Military-Symbols
+tracker=https://github.com/nwroyer/QGIS-Military-Symbols
